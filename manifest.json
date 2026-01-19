@@ -2,7 +2,7 @@
   "name": "Wellness Pup",
   "short_name": "Wellness",
   "description": "A wellness reminder app to help you stand up and stretch during work hours",
-  "start_url": "/",
+  "start_url": "/wellness-pup/",
   "display": "standalone",
   "background_color": "#F8F9FE",
   "theme_color": "#6B9FFF",
@@ -20,3 +20,4 @@
     }
   ]
 }
+
