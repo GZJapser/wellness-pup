@@ -9,7 +9,9 @@ const state = {
     reminderInterval: 120, // minutes
     soundEnabled: true,
     nextReminder: null,
-    checkInterval: null
+    checkInterval: null,
+    lastWorkStartNotification: null,
+    lastWorkEndNotification: null
 };
 
 // DOM Elements
@@ -255,8 +257,18 @@ function updateReminderDisplay() {
         const minutes = String(state.nextReminder.getMinutes()).padStart(2, '0');
         elements.nextReminderTime.textContent = `${hours}:${minutes}`;
     } else {
-        elements.nextReminderTime.textContent = '--:--';
-        elements.reminderCountdown.textContent = isWorkDay() ? 'No more reminders today' : 'Enjoy your weekend!';
+        // Check if work end notification is still coming today
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        if (isWorkDay() && state.remindersEnabled && currentTime < state.endTime) {
+            // Show work end time as next reminder
+            elements.nextReminderTime.textContent = state.endTime;
+            elements.reminderCountdown.textContent = 'Work end notification';
+        } else {
+            elements.nextReminderTime.textContent = '--:--';
+            elements.reminderCountdown.textContent = isWorkDay() ? 'No more reminders today' : 'Enjoy your weekend!';
+        }
     }
 }
 
@@ -277,6 +289,12 @@ function startCountdown() {
                 checkAndScheduleReminders();
             }
         }
+
+        // Check for work start notification
+        checkWorkStartNotification();
+
+        // Check for work end notification
+        checkWorkEndNotification();
     }, 1000);
 }
 
@@ -427,6 +445,103 @@ function showNotification() {
         });
     }
 }
+
+// Check and show work start notification
+function checkWorkStartNotification() {
+    if (!state.remindersEnabled || !isWorkDay()) {
+        return;
+    }
+
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const today = now.toDateString();
+
+    // Check if it's work start time and we haven't shown notification today
+    if (currentTime === state.startTime && state.lastWorkStartNotification !== today) {
+        showWorkStartNotification();
+        state.lastWorkStartNotification = today;
+    }
+}
+
+// Show work start notification
+function showWorkStartNotification() {
+    // Update notification content
+    const notificationTitle = document.querySelector('.notification-title');
+    const notificationMessage = document.querySelector('.notification-message');
+
+    notificationTitle.textContent = 'Good Morning! ☀️';
+    notificationMessage.textContent = "Time to start the day! Let's stay healthy and productive together! 🐾";
+
+    elements.notificationOverlay.classList.add('show');
+
+    // Play sound if enabled
+    if (state.soundEnabled) {
+        playNotificationSound();
+    }
+
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Good Morning! ☀️', {
+            body: "Time to start the day! Let's stay healthy and productive together!",
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%236B9FFF"/></svg>'
+        });
+    }
+
+    // Reset notification content after dismissal
+    setTimeout(() => {
+        notificationTitle.textContent = 'Time to Stand Up! 🐾';
+        notificationMessage.textContent = "You've been sitting for a while. Let's stretch and move!";
+    }, 100);
+}
+
+// Check and show work end notification
+function checkWorkEndNotification() {
+    if (!state.remindersEnabled || !isWorkDay()) {
+        return;
+    }
+
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const today = now.toDateString();
+
+    // Check if it's work end time and we haven't shown notification today
+    if (currentTime === state.endTime && state.lastWorkEndNotification !== today) {
+        showWorkEndNotification();
+        state.lastWorkEndNotification = today;
+    }
+}
+
+// Show work end notification
+function showWorkEndNotification() {
+    // Update notification content
+    const notificationTitle = document.querySelector('.notification-title');
+    const notificationMessage = document.querySelector('.notification-message');
+
+    notificationTitle.textContent = 'Great Job Today! 🎉';
+    notificationMessage.textContent = "Work is done! Time to relax and enjoy your evening! You've earned it! 💙";
+
+    elements.notificationOverlay.classList.add('show');
+
+    // Play sound if enabled
+    if (state.soundEnabled) {
+        playNotificationSound();
+    }
+
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Great Job Today! 🎉', {
+            body: "Work is done! Time to relax and enjoy your evening!",
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%236B9FFF"/></svg>'
+        });
+    }
+
+    // Reset notification content after dismissal
+    setTimeout(() => {
+        notificationTitle.textContent = 'Time to Stand Up! 🐾';
+        notificationMessage.textContent = "You've been sitting for a while. Let's stretch and move!";
+    }, 100);
+}
+
 
 // Dismiss notification
 function dismissNotification() {
